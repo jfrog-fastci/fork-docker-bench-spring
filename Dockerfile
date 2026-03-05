@@ -1,14 +1,12 @@
-FROM eclipse-temurin:21
-
-RUN apt-get update
-RUN apt-get install -y vim less man-db wget telnet curl net-tools iputils-ping htop dnsutils strace maven
-
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn package -DskipTests -q
 
-COPY . .
-
-RUN mvn package -DskipTests
-
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/app-1.0.0.jar app.jar
 EXPOSE 8080
-
-CMD ["java", "-jar", "target/app-1.0.0.jar"]
+CMD ["java", "-jar", "app.jar"]
